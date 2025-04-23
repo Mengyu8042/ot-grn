@@ -14,7 +14,8 @@ def double_ot(
     exp2: Union[np.ndarray, pd.DataFrame],
     paired: bool = True,
     reg_m: float = 0.05,
-    reg: float = 0.05,
+    reg: Union[float, Tuple[float, float]] = (0.005, 0.05),
+    s: int = None,
     n_components: int = None,
     return_alignment: bool = False
 ) -> Union[np.ndarray, Tuple[np.ndarray, np.ndarray]]:
@@ -23,16 +24,18 @@ def double_ot(
 
     Parameters
     ----------
-    exp1 : np.ndarray or pandas.DataFrame
-        Expression matrix for condition 1 (genes x samples).
-    exp2 : np.ndarray or pandas.DataFrame
-        Expression matrix for condition 2 (genes x samples).
+    exp1 : array-like (genes x samples)
+        Expression matrix for condition 1.
+    exp2 : array-like (genes x samples)
+        Expression matrix for condition 2.
     paired : bool, optional
         If True, assumes the samples are paired. If False, uses partial OT to align samples, by default True.
     reg_m : float, optional
-        Marginal relaxation hyperparameter, by default 0.05.
-    reg : float, optional
-        Entropy regularization hyperparameter, by default 0.05.
+        Marginal relaxation parameter for robust OT, by default 0.05.
+    reg : float or (float, float), optional
+        Entropic regularization; either a scalar or a tuple (reg_pot, reg_rot), by default (0.005, 0.05).
+    s : int, optional
+        Transport budget in partial OT, by default None (min(#samples)).
     n_components : int, optional
         Number of principal components for PCA in sample alignment, by default None (all components).
     return_alignment : bool, optional
@@ -52,12 +55,19 @@ def double_ot(
         exp1 = exp1.values
     if isinstance(exp2, pd.DataFrame):
         exp2 = exp2.values
+        
+    # Unpack regularization parameters
+    if isinstance(reg, tuple):
+        reg_pot, reg_rot = reg
+    else:
+        reg_pot = reg_rot = reg
     
     G0 = None  # Initialize sample alignment plan
 
     if not paired:
         # Align samples using partial OT
-        exp1, exp2, G0 = _align_samples(exp1, exp2, n_components)
+        exp1, exp2, G0 = _align_samples(
+            exp1, exp2, reg=reg_pot, s=s, n_components=n_components)
 
     # Calculate gene distance matrix
     gene_dist = _calculate_distance_matrix(exp1, exp2, method='spearman')
@@ -68,8 +78,7 @@ def double_ot(
 
     # Compute the unbalanced OT plan
     ot_plan = ot.unbalanced.sinkhorn_unbalanced(
-        exp1_mass, exp2_mass, gene_dist, reg=reg, reg_m=reg_m
-    )
+        exp1_mass, exp2_mass, gene_dist, reg=reg_rot, reg_m=reg_m)
 
     if return_alignment and not paired:
         return ot_plan, G0
@@ -79,6 +88,8 @@ def double_ot(
 def _align_samples(
     exp1: np.ndarray,
     exp2: np.ndarray,
+    reg: float = 5e-3,
+    s: int = None,
     n_components: int = None
 ) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
     """
@@ -90,6 +101,10 @@ def _align_samples(
         Expression matrix for condition 1 (genes x samples).
     exp2 : np.ndarray
         Expression matrix for condition 2 (genes x samples).
+    reg : float, optional
+        Entropic regularization for partial OT, by default 0.005.
+    s : int, optional
+        Total mass to transport, by default None (min(#samples)).
     n_components : int, optional
         Number of principal components for PCA, by default None (all components).
 
@@ -102,6 +117,7 @@ def _align_samples(
     """
     n_samples1 = exp1.shape[1]
     n_samples2 = exp2.shape[1]
+    s = min(n_samples1, n_samples2) if s is None else s
 
     # Perform PCA
     pca = PCA(n_components=n_components)
@@ -119,8 +135,13 @@ def _align_samples(
     weights2 = np.ones(n_samples2)
 
     # Compute the partial OT plan
-    G0 = ot.partial.partial_wasserstein(weights1, weights2, sample_dist, m=min(n_samples1, n_samples2))
-
+    if reg == 0:
+        G0 = ot.partial.partial_wasserstein(weights1, weights2, sample_dist, m=s)
+    else:
+        G0 = ot.partial.entropic_partial_wasserstein(
+            weights1, weights2, sample_dist, reg=reg, m=s, stopThr=1e-9)
+        G0 = _binarize_alignment(G0, s)
+    
     # Get matching indices based on transport plan
     indices1, indices2 = np.nonzero(G0)
     exp1_aligned = exp1[:, indices1]
@@ -177,3 +198,26 @@ def _scipy_distance(exp1, exp2, metric):
         return cdist(exp1, exp2, 'cosine')
     elif metric == 'l1':
         return cdist(exp1, exp2, 'minkowski', p=1)
+
+def _binarize_alignment(matrix, s):
+    n_rows, n_cols = matrix.shape
+
+    # Step 1: mark max values by row or column
+    if n_rows <= n_cols:
+        max_mask = (matrix == np.max(matrix, axis=1, keepdims=True)).astype(int)
+    else:
+        max_mask = (matrix == np.max(matrix, axis=0, keepdims=True)).astype(int)
+
+    # Step 2: if already ≤ s, return directly
+    if max_mask.sum() <= s:
+        return max_mask
+
+    # Step 3: keep top-s among marked entries
+    scores = matrix * max_mask
+    flat_scores = scores.flatten()
+    top_indices = np.argsort(flat_scores)[::-1]
+
+    threshold = flat_scores[top_indices[s]]
+    binary = ((scores >= threshold) & (max_mask == 1)).astype(int)
+
+    return binary

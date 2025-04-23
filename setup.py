@@ -29,6 +29,15 @@ setup(
         'scikit-learn',
         'pot',  # Python Optimal Transport library
     ],
+    extras_require={
+        'dev': [
+            'pytest',
+            'flake8',
+            'black',
+            'isort',
+            'jupyter',
+        ]
+    },
     classifiers=[
         'Programming Language :: Python :: 3',
         'License :: OSI Approved :: MIT License',

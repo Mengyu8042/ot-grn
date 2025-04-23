@@ -97,11 +97,13 @@ print(key_genes)
       - `exp1`: Expression matrix for condition 1 (e.g., normal state).
       - `exp2`: Expression matrix for condition 2 (e.g., tumor state).
       - `paired` (optional): If True, assumes the samples are paired. If False, uses partial OT to align samples, by default True.
-      - `reg_m` (optional): Marginal relaxation hyperparameter, by default 0.05.
-      - `reg` (optional): Entropy regularization hyperparameter, by default 0.05.
+      - `reg_m` (optional): Marginal relaxation hyperparameter for robust OT, by default 0.05.
+      - `reg` (optional): Entropy regularization hyperparameter for partial OT and robust OT; either a scalar or a tuple (reg_pot, reg_rot), by default (0.005, 0.05).
+      - `s` (optional): Transport budget in partial OT, by default None (min(n_samples1, n_samples2)).
       - `n_components` (optional): Number of principal components for PCA in sample alignment, by default None (all components).
       - `return_alignment` (optional): If True and samples are unpaired (`paired=False`), returns the sample alignment result (sample-level OT plan), by default False.
    - Returns: Gene-level OT plan (and sample-level OT plan).
+
 
 4. **`evaluate_grn_accuracy`**
    - Calculate performance metrics for the inferred GRN.

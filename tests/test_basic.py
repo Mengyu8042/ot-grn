@@ -15,4 +15,3 @@ def test_double_ot_pipeline_runs():
     # Basic sanity checks
     assert ot_plan.shape[0] == ot_plan.shape[1] == 500
     assert auroc >= 0 and aupr >= 0 and ep >= 0
-

@@ -18,3 +18,5 @@ ot_grn/data/__init__.py
 ot_grn/data/normal_data_source1.csv
 ot_grn/data/normal_data_source2.csv
 ot_grn/data/tumor_data_source1.csv
+tests/test_basic.py
+tests/test_real_data.py

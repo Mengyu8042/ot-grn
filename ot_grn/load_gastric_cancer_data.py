@@ -6,9 +6,9 @@ import numpy as np
 from typing import Tuple
 from importlib import resources
 
+
 def load_gastric_cancer_data(
-    same_source: bool = True,
-    paired: bool = True
+    same_source: bool = True, paired: bool = True
 ) -> Tuple[np.ndarray, np.ndarray]:
     """
     Load gastric cancer gene expression data.
@@ -18,7 +18,7 @@ def load_gastric_cancer_data(
     same_source : bool, optional
         If True, normal and tumor samples are from the same source, by default True.
     paired : bool, optional
-        Only relevant if `same_source` is True. If True, samples are paired, by default True. 
+        Only relevant if `same_source` is True. If True, samples are paired, by default True.
 
     Returns
     -------
@@ -27,14 +27,14 @@ def load_gastric_cancer_data(
         - Tumor expression dataframe (genes x samples).
     """
     if same_source:
-        with resources.open_text('ot_grn.data', 'normal_data_source1.csv') as f:
+        with resources.open_text("ot_grn.data", "normal_data_source1.csv") as f:
             exp1 = pd.read_csv(f, index_col=0)
     else:
-        with resources.open_text('ot_grn.data', 'normal_data_source2.csv') as f:
-            exp1 = pd.read_csv(f, index_col=0)  
+        with resources.open_text("ot_grn.data", "normal_data_source2.csv") as f:
+            exp1 = pd.read_csv(f, index_col=0)
         exp1 = exp1.groupby(exp1.index).median()
-    
-    with resources.open_text('ot_grn.data', 'tumor_data_source1.csv') as f:
+
+    with resources.open_text("ot_grn.data", "tumor_data_source1.csv") as f:
         exp2 = pd.read_csv(f, index_col=0)
 
     # Filter genes
@@ -45,5 +45,7 @@ def load_gastric_cancer_data(
     if same_source and paired:
         exp2 = exp2[exp1.columns]
 
-    assert (exp1.index.tolist() == exp2.index.tolist()), "Genes in exp1 and exp2 do not match."
+    assert (
+        exp1.index.tolist() == exp2.index.tolist()
+    ), "Genes in exp1 and exp2 do not match."
     return exp1, exp2

@@ -34,6 +34,8 @@ def double_ot(
         Marginal relaxation parameter for robust OT, by default 0.05.
     reg : float or (float, float), optional
         Entropic regularization; either a scalar or a tuple (reg_pot, reg_rot), by default (0.005, 0.05).
+    s : int, optional
+        Transport budget in partial OT, by default None (min(#samples)).
     n_components : int, optional
         Number of principal components for PCA in sample alignment, by default None (all components).
     return_alignment : bool, optional

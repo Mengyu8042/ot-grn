@@ -34,8 +34,6 @@ setup(
             'pytest',
             'flake8',
             'black',
-            'isort',
-            'jupyter',
         ]
     },
     classifiers=[

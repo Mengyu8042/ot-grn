@@ -9,6 +9,7 @@ from sklearn.decomposition import PCA
 import scipy.stats as stats
 from scipy.spatial.distance import cdist
 
+
 def double_ot(
     exp1: Union[np.ndarray, pd.DataFrame],
     exp2: Union[np.ndarray, pd.DataFrame],
@@ -17,7 +18,7 @@ def double_ot(
     reg: Union[float, Tuple[float, float]] = (0.005, 0.05),
     s: int = None,
     n_components: int = None,
-    return_alignment: bool = False
+    return_alignment: bool = False,
 ) -> Union[np.ndarray, Tuple[np.ndarray, np.ndarray]]:
     """
     Implement the Double Optimal Transport (OT) method for inferring gene regulatory networks.
@@ -41,7 +42,7 @@ def double_ot(
     return_alignment : bool, optional
         If True and samples are unpaired (`paired=False`), returns the sample alignment matrix (sample-level OT plan),
         by default False.
-        
+
     Returns
     -------
     np.ndarray or Tuple[np.ndarray, np.ndarray]
@@ -55,22 +56,23 @@ def double_ot(
         exp1 = exp1.values
     if isinstance(exp2, pd.DataFrame):
         exp2 = exp2.values
-        
+
     # Unpack regularization parameters
     if isinstance(reg, tuple):
         reg_pot, reg_rot = reg
     else:
         reg_pot = reg_rot = reg
-    
+
     G0 = None  # Initialize sample alignment plan
 
     if not paired:
         # Align samples using partial OT
         exp1, exp2, G0 = _align_samples(
-            exp1, exp2, reg=reg_pot, s=s, n_components=n_components)
+            exp1, exp2, reg=reg_pot, s=s, n_components=n_components
+        )
 
     # Calculate gene distance matrix
-    gene_dist = _calculate_distance_matrix(exp1, exp2, method='spearman')
+    gene_dist = _calculate_distance_matrix(exp1, exp2, method="spearman")
 
     # Calculate mean expression levels for each gene
     exp1_mass = np.mean(exp1, axis=1)
@@ -78,19 +80,21 @@ def double_ot(
 
     # Compute the unbalanced OT plan
     ot_plan = ot.unbalanced.sinkhorn_unbalanced(
-        exp1_mass, exp2_mass, gene_dist, reg=reg_rot, reg_m=reg_m)
+        exp1_mass, exp2_mass, gene_dist, reg=reg_rot, reg_m=reg_m
+    )
 
     if return_alignment and not paired:
         return ot_plan, G0
     else:
         return ot_plan
 
+
 def _align_samples(
     exp1: np.ndarray,
     exp2: np.ndarray,
     reg: float = 5e-3,
     s: int = None,
-    n_components: int = None
+    n_components: int = None,
 ) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
     """
     Align samples from two conditions using partial optimal transport.
@@ -128,7 +132,7 @@ def _align_samples(
     data2_pca = data_pca[n_samples1:]
 
     # Calculate cosine distance between samples
-    sample_dist = _calculate_distance_matrix(data1_pca, data2_pca, method='cosine')
+    sample_dist = _calculate_distance_matrix(data1_pca, data2_pca, method="cosine")
 
     # Uniform weights for samples
     weights1 = np.ones(n_samples1)
@@ -139,9 +143,10 @@ def _align_samples(
         G0 = ot.partial.partial_wasserstein(weights1, weights2, sample_dist, m=s)
     else:
         G0 = ot.partial.entropic_partial_wasserstein(
-            weights1, weights2, sample_dist, reg=reg, m=s, stopThr=1e-9)
+            weights1, weights2, sample_dist, reg=reg, m=s, stopThr=1e-9
+        )
         G0 = _binarize_alignment(G0, s)
-    
+
     # Get matching indices based on transport plan
     indices1, indices2 = np.nonzero(G0)
     exp1_aligned = exp1[:, indices1]
@@ -149,10 +154,9 @@ def _align_samples(
 
     return exp1_aligned, exp2_aligned, G0
 
+
 def _calculate_distance_matrix(
-    exp1: np.ndarray,
-    exp2: np.ndarray,
-    method: str = 'spearman'
+    exp1: np.ndarray, exp2: np.ndarray, method: str = "spearman"
 ) -> np.ndarray:
     """
     Calculate the gene distance matrix using specified method.
@@ -171,33 +175,39 @@ def _calculate_distance_matrix(
     np.ndarray
         Gene distance matrix (genes x genes).
     """
-    if method in ['euclidean', 'cosine', 'l1']:
+    if method in ["euclidean", "cosine", "l1"]:
         gene_dist = _scipy_distance(exp1, exp2, method)
-    elif method in ['pearson', 'spearman']:
-        if method == 'spearman':
+    elif method in ["pearson", "spearman"]:
+        if method == "spearman":
             cor = _spearman_correlation(exp1, exp2)
-        elif method == 'pearson':
+        elif method == "pearson":
             cor = _pearson_correlation(exp1, exp2)
         gene_dist = 1 - np.abs(cor)
     else:
-        raise ValueError("Invalid method. Choose from 'euclidean', 'cosine', 'l1', 'pearson', 'spearman'.")
+        raise ValueError(
+            "Invalid method. Choose from 'euclidean', 'cosine', 'l1', 'pearson', 'spearman'."
+        )
     gene_dist /= np.max(gene_dist)
     return gene_dist
 
+
 def _pearson_correlation(exp1, exp2):
-    return np.corrcoef(exp1, exp2)[:exp1.shape[0], exp1.shape[0]:]
+    return np.corrcoef(exp1, exp2)[: exp1.shape[0], exp1.shape[0] :]
+
 
 def _spearman_correlation(exp1, exp2):
     rho, _ = stats.spearmanr(exp1.T, exp2.T)
-    return rho[:exp1.shape[0], exp1.shape[0]:]
+    return rho[: exp1.shape[0], exp1.shape[0] :]
+
 
 def _scipy_distance(exp1, exp2, metric):
-    if metric == 'euclidean':
-        return cdist(exp1, exp2)**2
-    elif metric == 'cosine':
-        return cdist(exp1, exp2, 'cosine')
-    elif metric == 'l1':
-        return cdist(exp1, exp2, 'minkowski', p=1)
+    if metric == "euclidean":
+        return cdist(exp1, exp2) ** 2
+    elif metric == "cosine":
+        return cdist(exp1, exp2, "cosine")
+    elif metric == "l1":
+        return cdist(exp1, exp2, "minkowski", p=1)
+
 
 def _binarize_alignment(matrix, s):
     n_rows, n_cols = matrix.shape

@@ -14,7 +14,6 @@ ot_grn.egg-info/SOURCES.txt
 ot_grn.egg-info/dependency_links.txt
 ot_grn.egg-info/requires.txt
 ot_grn.egg-info/top_level.txt
-ot_grn/data/__init__.py
 ot_grn/data/normal_data_source1.csv
 ot_grn/data/normal_data_source2.csv
 ot_grn/data/tumor_data_source1.csv

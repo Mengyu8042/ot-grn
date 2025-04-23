@@ -1,5 +1,3 @@
-# __init__.py
-
 from .generate_simulated_data import generate_simulated_data
 from .load_gastric_cancer_data import load_gastric_cancer_data
 from .double_ot import double_ot
@@ -11,5 +9,5 @@ __all__ = [
     "load_gastric_cancer_data",
     "double_ot",
     "evaluate_grn_accuracy",
-    "extract_top_edges"
+    "extract_top_edges",
 ]

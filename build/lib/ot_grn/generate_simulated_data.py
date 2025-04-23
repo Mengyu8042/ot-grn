@@ -4,13 +4,14 @@
 import numpy as np
 from typing import Tuple
 
+
 def generate_simulated_data(
     p: int,
     n: int,
     diffgene: float = 0.2,
     indegree: float = 5,
     snr: float = 2,
-    outlier_ratio: float = 0
+    outlier_ratio: float = 0,
 ) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
     """
     Generate simulated normal and tumor gene expression matrices.
@@ -38,7 +39,9 @@ def generate_simulated_data(
         - True regulatory relationships matrix (genes x genes).
     """
     exp1 = _generate_multivariate_normal_matrix(n, p).T
-    exp2, true_plan = _generate_paired_matrix(exp1, diffgene, indegree, snr, outlier_ratio)
+    exp2, true_plan = _generate_paired_matrix(
+        exp1, diffgene, indegree, snr, outlier_ratio
+    )
     true_plan[true_plan != 0] = 1
 
     # Normalize expression matrices
@@ -46,6 +49,7 @@ def generate_simulated_data(
     exp2 = _normalize_expression_matrix(exp2)
 
     return exp1, exp2, true_plan
+
 
 def _generate_multivariate_normal_matrix(n: int, p: int) -> np.ndarray:
     """
@@ -67,6 +71,7 @@ def _generate_multivariate_normal_matrix(n: int, p: int) -> np.ndarray:
     mean_vector = np.random.uniform(2, 5, p)
     random_matrix = np.random.multivariate_normal(mean_vector, cov_matrix, n)
     return np.abs(random_matrix)
+
 
 def _nonlinear_transform(x: np.ndarray, func_type: int) -> np.ndarray:
     """
@@ -96,6 +101,7 @@ def _nonlinear_transform(x: np.ndarray, func_type: int) -> np.ndarray:
     else:
         raise ValueError("Invalid function type. Choose 1, 2, or 3.")
 
+
 def _apply_nonlinear_transform(matrix: np.ndarray) -> np.ndarray:
     """
     Apply random nonlinear functions to each row of the input matrix.
@@ -114,15 +120,14 @@ def _apply_nonlinear_transform(matrix: np.ndarray) -> np.ndarray:
     n_rows = transformed_matrix.shape[0]
     func_types = np.random.randint(1, 4, n_rows)
     for i in range(n_rows):
-        transformed_matrix[i] = _nonlinear_transform(transformed_matrix[i], func_types[i])
+        transformed_matrix[i] = _nonlinear_transform(
+            transformed_matrix[i], func_types[i]
+        )
     return transformed_matrix
 
+
 def _generate_paired_matrix(
-    exp1: np.ndarray,
-    diffgene: float,
-    indegree: float,
-    snr: float,
-    outlier_ratio: float
+    exp1: np.ndarray, diffgene: float, indegree: float, snr: float, outlier_ratio: float
 ) -> Tuple[np.ndarray, np.ndarray]:
     """
     Generate a paired expression matrix with noise and regulatory relationships between genes.
@@ -153,7 +158,9 @@ def _generate_paired_matrix(
     exp2 = np.zeros_like(exp1)
     true_plan = np.zeros((n_genes, n_genes))
 
-    diff_indices = np.random.choice(range(n_genes), size=int(diffgene * n_genes), replace=False)
+    diff_indices = np.random.choice(
+        range(n_genes), size=int(diffgene * n_genes), replace=False
+    )
 
     for i in range(n_genes):
         random_noise = np.random.normal(0, noise_level[i], n_samples)
@@ -164,11 +171,20 @@ def _generate_paired_matrix(
                 diff_indices[diff_indices != i], n_parents, replace=False
             )
             parent_indices = np.append(parent_indices, i)
-            weights = np.random.choice([1, -1], n_parents + 1) * np.random.uniform(0.5, 2, n_parents + 1)
+            weights = np.random.choice([1, -1], n_parents + 1) * np.random.uniform(
+                0.5, 2, n_parents + 1
+            )
             weight_vector = np.zeros(n_genes)
             weight_vector[parent_indices] = weights
             true_plan[:, i] = weight_vector
-            exp2[i] = np.sum(weight_vector.reshape(n_genes, 1) * _apply_nonlinear_transform(exp1), axis=0) + random_noise
+            exp2[i] = (
+                np.sum(
+                    weight_vector.reshape(n_genes, 1)
+                    * _apply_nonlinear_transform(exp1),
+                    axis=0,
+                )
+                + random_noise
+            )
         else:
             true_plan[i, i] = 1
             exp2[i] = exp1[i] + random_noise
@@ -180,17 +196,20 @@ def _generate_paired_matrix(
         n_outliers = int(outlier_ratio * n_genes * n_samples)
         gene_indices = np.random.choice(n_genes, n_outliers)
         sample_indices = np.random.choice(n_samples, n_outliers)
-        outlier_types = np.random.choice(['heavy_tail', 'extreme', 'bernoulli'], size=n_outliers)
+        outlier_types = np.random.choice(
+            ["heavy_tail", "extreme", "bernoulli"], size=n_outliers
+        )
 
         for idx, (g_idx, s_idx) in enumerate(zip(gene_indices, sample_indices)):
-            if outlier_types[idx] == 'heavy_tail':
+            if outlier_types[idx] == "heavy_tail":
                 exp2[g_idx, s_idx] += np.random.standard_t(df=2) * noise_level[g_idx]
-            elif outlier_types[idx] == 'extreme':
+            elif outlier_types[idx] == "extreme":
                 exp2[g_idx, s_idx] += np.random.choice([3, -3]) * noise_level[g_idx]
-            elif outlier_types[idx] == 'bernoulli':
+            elif outlier_types[idx] == "bernoulli":
                 exp2[g_idx, s_idx] = np.random.binomial(1, 0.5)
 
     return np.abs(exp2), true_plan
+
 
 def _normalize_expression_matrix(exp: np.ndarray) -> np.ndarray:
     """

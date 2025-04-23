@@ -140,4 +140,4 @@ This project is licensed under the MIT License. See the [LICENSE](LICENSE) file 
 
 ## Contact
 
-For questions or issues, please contact **Mengyu Li** at `limengyu516@ruc.edu.cn` or open an issue on the [GitHub repository](https://github.com/Mengyu8042/ot-grn).
+For questions, bug reports, or feature requests, please read our [Contribution Guide](CONTRIBUTING.md). If your issue is not covered there, feel free to open a GitHub issue in the repository.

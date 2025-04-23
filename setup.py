@@ -9,7 +9,7 @@ long_description = (this_dir / "README.md").read_text(encoding="utf-8")
 
 setup(
     name='ot-grn',
-    version='1.0.0',
+    version='1.0.1',
     description='Double Optimal Transport for Differential Gene Regulatory Network Inference with Unpaired Samples',
     long_description=long_description,  # Add the README content
     long_description_content_type="text/markdown",  # Specify the content type (Markdown)

@@ -1,6 +1,6 @@
 Metadata-Version: 2.1
 Name: ot-grn
-Version: 1.0.0
+Version: 1.0.1
 Summary: Double Optimal Transport for Differential Gene Regulatory Network Inference with Unpaired Samples
 Home-page: https://github.com/Mengyu8042/ot-grn
 Author: Mengyu Li
